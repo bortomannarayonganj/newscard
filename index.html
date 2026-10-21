@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e11d2e"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><title>নিউজ কার্ড মেকার</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;700&family=Noto+Serif+Bengali:wght@500;700&family=Anek+Bangla:wght@500;800&family=Baloo+Da+2:wght@500;800&family=Galada&family=Mukta:wght@500;800&family=Tiro+Bangla&family=Noto+Sans+Bengali:wght@500;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#14171f;--mu:#667085;--bd:#dfe3ea;--ac:#e11d2e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1218;--card:#1a1f29;--tx:#eef1f6;--mu:#98a2b3;--bd:#2b3240}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Hind Siliguri',system-ui,sans-serif;padding:14px;max-width:560px;margin-inline:auto}
+h1{font-size:20px;margin:4px 0 12px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:12px}
+.box h2{font-size:15px;margin:0 0 6px}
+label{display:block;font-size:13px;color:var(--mu);margin:8px 0 3px}
+input[type=text],textarea,select{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:16px}
+input:disabled,textarea:disabled,select:disabled{opacity:.55}
+textarea{min-height:72px}
+input[type=range]{width:100%}
+input[type=file]{width:100%;font-size:14px}
+input[type=color]{width:46px;height:42px;padding:2px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);flex:none}
+button{width:100%;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:inherit;font-weight:700;font-size:17px;margin-top:6px}
+button.lk{width:auto;padding:4px 12px;margin:0;font-size:14px;background:var(--bd);color:var(--tx)}
+button.lk.on{background:#16a34a;color:#fff}
+button.gh{background:var(--tx);color:var(--bg)}
+canvas{width:100%;height:auto;border-radius:10px;display:block;background:#000}
+.hint{font-size:12px;color:var(--mu);margin-top:4px}
+img#out{width:100%;border-radius:10px;margin-top:8px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row>input[type=color]{flex:none}
+.top{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.top span{font-size:14px;font-weight:700}
+hr{border:0;border-top:1px solid var(--bd);margin:10px 0}
+</style>
+</head>
+<body>
+<h1>নিউজ কার্ড মেকার</h1>
+<div class="box"><canvas id="c" width="1080" height="1350"></canvas></div>
+<button class="gh" id="all">🔒 সব ঘর লক করুন</button>
+
+<div class="box" id="photoBox">
+<div class="top"><span>ছবি</span><button class="lk" id="lkP">🔓 লক</button></div>
+<input type="file" id="photo" accept="image/*">
+<div id="ps"><label>জুম</label><input type="range" id="zoom" min="100" max="250" value="100">
+<label>ডানে-বামে</label><input type="range" id="px" min="0" max="100" value="50">
+<label>উপরে-নিচে</label><input type="range" id="py" min="0" max="100" value="30"></div>
+</div>
+
+<div class="box" id="logoBox">
+<div class="top"><span>আপনার লোগো</span><button class="lk" id="lkL">🔓 লক</button></div>
+<input type="file" id="logo" accept="image/*">
+<label>লোগোর জায়গা</label>
+<select id="lpos"><option value="mid">মাঝের ব্র্যান্ড বারে (গোল)</option><option value="tr">ওপরে ডানে</option></select>
+<label>লোগোর সাইজ</label><input type="range" id="lsz" min="60" max="200" value="110">
+</div>
+
+<div id="fields"></div>
+
+<div class="box" id="bgBox">
+<div class="top"><span>ব্যাকগ্রাউন্ড ও লাইন</span><button class="lk" id="lkB">🔓 লক</button></div>
+<div class="row"><div><label>নিচের রঙ ১</label><input type="color" id="bg1" value="#040814"></div>
+<div><label>নিচের রঙ ২</label><input type="color" id="bg2" value="#0a1d4d"></div>
+<div><label>লাইনের রঙ</label><input type="color" id="lc" value="#ffffff"></div></div>
+</div>
+
+<div class="box">
+<button id="gen">ছবি তৈরি করুন</button>
+<div class="hint">তৈরি হলে নিচের ছবিতে লং প্রেস করে সেভ করুন।</div>
+<img id="out" alt=""><a id="dl" download="news-card.png" style="display:none;margin-top:10px;padding:13px;border-radius:12px;background:#16a34a;color:#fff;text-align:center;font-weight:700;text-decoration:none">⬇ ডাউনলোড করুন</a>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),cv=$('c'),ctx=cv.getContext('2d'),W=1080,H=1350,PH=820;
+const FONTS=['Hind Siliguri','Noto Sans Bengali','Noto Serif Bengali','Anek Bangla','Baloo Da 2','Mukta','Galada','Tiro Bangla'];
+const today=new Date().toLocaleDateString('bn-BD',{day:'numeric',month:'long',year:'numeric'});
+const FD=[
+ ['loc','লোকেশন (আইকনের পাশে)','নারায়ণগঞ্জ','#ffc61a','Hind Siliguri',0],
+ ['date','তারিখ',today,'#ffffff','Hind Siliguri',0],
+ ['head','শিরোনাম','*ধর্মীয় বিভেদ ভুলে* বৈষম্যহীন বাংলাদেশ গড়তে কাজ করছেন তারেক *রহমান: খোরশেদ*','#ffffff','Hind Siliguri',1],
+ ['hl','হাইলাইট (*...*) শব্দের রঙ','','#ffd21f','',2],
+ ['b1','ব্র্যান্ড (বাংলা, বড়)','ডেইলি','#ffffff','Hind Siliguri',0],
+ ['b2','ব্র্যান্ড (বাংলা, ছোট)','নারায়ণগঞ্জ','#ffffff','Hind Siliguri',0],
+ ['tag','নিচের লেখা','বিস্তারিত লিংক কমেন্টে','#ffffff','Hind Siliguri',0],
+ ['web','ওয়েবসাইট','dailynarayanganj.com','#d9dfec','Hind Siliguri',0],
+ ['e1','ইংরেজি ব্র্যান্ড (বড়)','DAILY','#ffffff','Hind Siliguri',0],
+ ['e2','ইংরেজি ব্র্যান্ড (ছোট)','narayanganj','#ffffff','Hind Siliguri',0]
+];
+const S={};let img=null,logo=null,locked={};
+let saved={};try{saved=JSON.parse(localStorage.getItem('ncm')||'{}')}catch(e){}
+const box=$('fields');
+FD.forEach(([k,lb,df,col,fo,t])=>{
+  const sv=saved[k]||{};S[k]={v:sv.v??df,c:sv.c||col,f:sv.f||fo};
+  const d=document.createElement('div');d.className='box';
+  let h=`<div class="top"><span>${lb}</span><button class="lk" data-lk="${k}">🔓 লক</button></div>`;
+  if(t!==2)h+=t===1?`<textarea data-k="${k}" data-p="v"></textarea>`:`<input type="text" data-k="${k}" data-p="v">`;
+  h+=`<div class="row">`;
+  if(t!==2)h+=`<select data-k="${k}" data-p="f">${FONTS.map(f=>`<option style="font-family:'${f}'">${f}</option>`).join('')}</select>`;
+  h+=`<input type="color" data-k="${k}" data-p="c"></div>`;
+  if(t===1)h+=`<label>লেখার সাইজ</label><input type="range" id="fs" min="44" max="96" value="${saved.fs||74}"><div class="hint">হলুদ করতে শব্দ *তারকা* চিহ্নের ভেতরে লিখুন</div>`;
+  d.innerHTML=h;box.appendChild(d);
+  d.querySelectorAll('[data-p]').forEach(el=>{el.value=S[k][el.dataset.p];el.addEventListener('input',()=>{S[k][el.dataset.p]=el.value;draw();save()})});
+  const fs=d.querySelector('#fs');if(fs)fs.addEventListener('input',()=>{draw();save()});
+  d.querySelector('.lk').onclick=()=>setLock(d.querySelector('.lk'),d,!locked[k],k);
+  d._k=k;
+});
+function setLock(btn,scope,on,k){locked[k]=on;btn.textContent=on?'🔒 লকড':'🔓 লক';btn.classList.toggle('on',on);
+  scope.querySelectorAll('input,textarea,select').forEach(e=>e.disabled=on);save()}
+// special boxes
+[['lkP','photoBox','P'],['lkL','logoBox','L'],['lkB','bgBox','B']].forEach(([b,bx,k])=>{
+  $(b).onclick=()=>{const on=!locked[k];setLock($(b),$(bx),on,k);$(b).disabled=false}});
+// fix: lock button of special boxes must stay enabled
+const origSet=setLock;
+function applyAll(on){document.querySelectorAll('.lk').forEach(b=>{const bx=b.closest('.box');const k=b.dataset.lk||({lkP:'P',lkL:'L',lkB:'B'})[b.id];
+  origSet(b,bx,on,k);b.disabled=false});
+  $('all').textContent=on?'🔓 সব ঘর খুলুন':'🔒 সব ঘর লক করুন';$('all').dataset.on=on?'1':''}
+document.querySelectorAll('.lk').forEach(b=>{const o=b.onclick;b.onclick=e=>{o(e);b.disabled=false}});
+$('all').onclick=()=>applyAll(!$('all').dataset.on);
+// file + misc
+function load(inp,cb){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{cb(i);draw()};i.onerror=()=>alert('ছবিটি খোলা যায়নি, অন্য ছবি দিন');i.src=r.result};r.readAsDataURL(f)}
+$('photo').onchange=e=>load(e.target,i=>img=i);
+$('logo').onchange=e=>load(e.target,i=>logo=i);
+['zoom','px','py','lpos','lsz','bg1','bg2','lc'].forEach(id=>{const e=$(id);if(saved[id])e.value=saved[id];e.addEventListener('input',()=>{draw();save()})});
+function save(){try{const o={};FD.forEach(([k])=>o[k]=S[k]);['bg1','bg2','lc','lpos','lsz'].forEach(i=>o[i]=$(i).value);o.fs=$('fs').value;localStorage.setItem('ncm',JSON.stringify(o))}catch(e){}}
+
+function tokens(s){const t=[];let hi=false;s.split('*').forEach(p=>{p.split(/\s+/).filter(Boolean).forEach(w=>t.push({w,hi}));hi=!hi});return t}
+const ft=(k,sz,w=700)=>`${w} ${sz}px '${S[k].f}',sans-serif`;
+function pin(cx,cy,r,col){ctx.beginPath();ctx.moveTo(cx-r,cy);ctx.arc(cx,cy,r,Math.PI,0);ctx.quadraticCurveTo(cx+r,cy+r*1.3,cx,cy+r*2.3);ctx.quadraticCurveTo(cx-r,cy+r*1.3,cx-r,cy);ctx.fillStyle=col;ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,r*.4,0,7);ctx.fillStyle='rgba(0,0,0,.65)';ctx.fill()}
+
+function draw(){
+  const g=ctx.createLinearGradient(0,PH,W,H);g.addColorStop(0,$('bg1').value);g.addColorStop(.55,$('bg2').value);g.addColorStop(1,$('bg1').value);
+  ctx.fillStyle=$('bg1').value;ctx.fillRect(0,0,W,H);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.beginPath();ctx.rect(0,0,W,PH);ctx.clip();
+  if(img){const z=$('zoom').value/100,s=Math.max(W/img.width,PH/img.height)*z,w=img.width*s,h=img.height*s;
+    ctx.drawImage(img,-(w-W)*$('px').value/100,-(h-PH)*$('py').value/100,w,h)}
+  else{ctx.fillStyle='#233';ctx.fillRect(0,0,W,PH);ctx.fillStyle='#8a97b0';ctx.font=ft('loc',40);ctx.textAlign='center';ctx.fillText('ছবি আপলোড করুন',W/2,PH/2)}
+  ctx.restore();
+  let f=ctx.createLinearGradient(0,PH-170,0,PH);f.addColorStop(0,'rgba(0,0,0,0)');f.addColorStop(1,$('bg1').value);ctx.fillStyle=f;ctx.fillRect(0,PH-170,W,170);
+  f=ctx.createLinearGradient(0,0,0,190);f.addColorStop(0,'rgba(0,0,0,.6)');f.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=f;ctx.fillRect(0,0,W,190);
+  // location + date
+  ctx.textAlign='left';ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=8;
+  pin(78,50,19,S.loc.c);
+  ctx.fillStyle=S.loc.c;ctx.font=ft('loc',38);ctx.fillText(S.loc.v,112,76);
+  ctx.fillStyle=S.date.c;ctx.font=ft('date',30,500);ctx.fillText(S.date.v,60,128);
+  ctx.shadowBlur=0;
+  const lsz=+$('lsz').value;
+  if(logo&&$('lpos').value==='tr'){const r=lsz/Math.max(logo.width,logo.height);ctx.shadowColor='rgba(0,0,0,.6)';ctx.shadowBlur=10;
+    ctx.drawImage(logo,W-40-logo.width*r,30,logo.width*r,logo.height*r);ctx.shadowBlur=0}
+  // brand bar
+  const by=PH-30,bx=W/2-150;
+  ctx.beginPath();ctx.arc(bx,by,42,0,7);ctx.fillStyle='#ffc61a';ctx.fill();
+  if(logo&&$('lpos').value==='mid'){ctx.save();ctx.beginPath();ctx.arc(bx,by,40,0,7);ctx.clip();
+    const r=80/Math.min(logo.width,logo.height);ctx.drawImage(logo,bx-logo.width*r/2,by-logo.height*r/2,logo.width*r,logo.height*r);ctx.restore()}
+  else{ctx.fillStyle='#111';ctx.font=ft('b1',46);ctx.textAlign='center';ctx.fillText((S.b1.v||'ব')[0],bx,by+16)}
+  ctx.fillStyle='#fff';ctx.fillRect(W/2-90,by-45,3,90);ctx.textAlign='left';
+  ctx.fillStyle=S.b1.c;ctx.font=ft('b1',46);ctx.fillText(S.b1.v,W/2-70,by+2);
+  ctx.fillStyle=S.b2.c;ctx.font=ft('b2',28,500);ctx.fillText(S.b2.v,W/2-70,by+38);
+  // headline
+  const fs=+$('fs').value;ctx.font=ft('head',fs);
+  const maxW=W-130,sp=ctx.measureText(' ').width,lines=[];let cur=[],cw=0;
+  tokens(S.head.v).forEach(t=>{const w=ctx.measureText(t.w).width;
+    if(cur.length&&cw+sp+w>maxW){lines.push({a:cur,w:cw});cur=[];cw=0}
+    cw+=(cur.length?sp:0)+w;cur.push({...t,mw:w})});
+  if(cur.length)lines.push({a:cur,w:cw});
+  const lh=fs*1.3;let y=PH+130;ctx.shadowColor='rgba(0,0,0,.6)';ctx.shadowBlur=6;
+  lines.forEach(l=>{let x=(W-l.w)/2;l.a.forEach(t=>{ctx.fillStyle=t.hi?S.hl.c:S.head.c;ctx.fillText(t.w,x,y);x+=t.mw+sp});y+=lh});
+  ctx.shadowBlur=0;
+  const ly=Math.max(y-lh/2+30,1090);
+  ctx.fillStyle=$('lc').value;ctx.fillRect(90,ly,W-180,3);
+  ctx.textAlign='center';ctx.fillStyle=S.tag.c;ctx.font=ft('tag',34,500);ctx.fillText(S.tag.v,W/2,ly+65);
+  ctx.textAlign='left';ctx.fillStyle=S.web.c;ctx.font=ft('web',28,500);ctx.fillText(S.web.v,60,H-30);
+  ctx.textAlign='right';ctx.fillStyle=S.e1.c;ctx.font=`800 72px '${S.e1.f}',sans-serif`;ctx.fillText(S.e1.v,W-50,H-85);
+  ctx.fillStyle=S.e2.c;ctx.font=`500 38px '${S.e2.f}',sans-serif`;ctx.fillText(S.e2.v,W-50,H-40);
+}
+$('gen').onclick=()=>{draw();const u=cv.toDataURL('image/png');$('out').src=u;$('dl').href=u;$('dl').style.display='block';$('out').scrollIntoView({behavior:'smooth'})};
+Promise.all(FONTS.flatMap(f=>[`500 30px '${f}'`,`700 30px '${f}'`].map(x=>document.fonts.load(x)))).then(draw).catch(draw);
+draw();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+  </html>
